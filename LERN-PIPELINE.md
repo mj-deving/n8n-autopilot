@@ -73,7 +73,7 @@ code --install-extension etienne-lescot.n8n-as-code
 ### Schritt 2: Projekt initialisieren
 
 ```bash
-cd ~/Projects/n8n-explore
+cd ~/Projects/n8n-autopilot
 
 # n8n API Key erstellen:
 # n8n UI -> Settings -> API -> Create API Key
@@ -97,7 +97,7 @@ git commit -m "Initial: n8n-as-code Projekt"
 ### Ergebnis: Projektstruktur
 
 ```
-n8n-explore/
+n8n-autopilot/
   n8nac-config.json          # n8nac Konfiguration
   n8n-referenz.md            # Referenzdokument
   LERN-PIPELINE.md           # Dieser Plan

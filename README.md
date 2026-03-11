@@ -1,4 +1,4 @@
-# n8n-explore: AI-Workflow-Automatisierung mit n8n-as-code
+# n8n-autopilot: AI-Workflow-Automatisierung mit n8n-as-code
 
 > 5 AI-Workflows, vollstaendig als TypeScript, automatisiert gebaut und getestet
 > Marius J | Stand: 2026-03-11
@@ -146,7 +146,7 @@ pro Node: OK/FAIL, Error-Messages und Output-Previews.
 ## Projektstruktur
 
 ```
-n8n-explore/
+n8n-autopilot/
 ├── README.md                          # Diese Datei
 ├── n8n-referenz.md                    # n8n Plattform-Referenz
 ├── n8nac-referenz.md                  # n8n-as-code CLI Referenz
