@@ -142,7 +142,7 @@ docs/index.html                →   docs/index.html
 | **workflow/workflow.json** | Wir nutzen n8n-as-code (TypeScript), nicht JSON-Export |
 | **Beads (.beads/)** | Zusaetzliches Tool mit wenig Mehrwert fuer unser Setup |
 | **@AGENTS.md** | Wir haben bereits AGENTS.md (auto-generiert von n8nac) |
-| **package.json Scripts** | `validate` braucht jq + JSON — wir haben TypeScript. `check-secrets` ist gute Idee (siehe Empfehlungen) |
+| **package.json Scripts** | `validate` braucht jq + JSON — wir haben TypeScript. `check-secrets` haben wir als eigenes Script uebernommen und erweitert |
 | **LICENSE (MIT)** | Noch nicht entschieden ob/wie lizenziert |
 | **workflow_help.yml** | Template fuer Community-Support — nicht relevant fuer persoenliches Lernprojekt |
 | **assets/ Ordner** | Screenshots koennen spaeter bei Bedarf ergaenzt werden |
@@ -151,32 +151,42 @@ docs/index.html                →   docs/index.html
 
 ## 5. Empfehlungen fuer die Zukunft
 
-### Kurzfristig (naechste Session)
+### Erledigt
 
-**1. GitHub Pages aktivieren**
+**1. GitHub Pages aktivieren** — DONE
 
-Nach dem naechsten Push:
-```
-GitHub Repo → Settings → Pages → Source: "GitHub Actions"
-```
-Ergebnis: `https://mj-deving.github.io/n8n-autopilot/`
+Live unter: https://mj-deving.github.io/n8n-autopilot/
+- Pages via `gh api` aktiviert (`build_type: workflow`)
+- Auto-Deploy Action `.github/workflows/pages.yml` laeuft bei jedem Push auf `docs/`
 
-**2. Secret-Check als Pre-Commit Hook**
+**2. Secret-Check als Pre-Commit Hook** — DONE
 
-Statt `npm run check-secrets` aus dem Template:
+`check-secrets.sh` mit `--staged` Modus als Git Pre-Commit Hook:
 ```bash
-# Einfacher grep-basierter Check vor jedem Commit
-# In .git/hooks/pre-commit oder als Claude Code Hook
-grep -rn "password\|secret\|api_key\|token" workflows/ --include="*.ts" \
-  | grep -v "credentials:" | grep -v "//.*secret"
+# Manuell ausfuehren:
+bash check-secrets.sh              # Alle Dateien
+bash check-secrets.sh --staged     # Nur gestagete (wie im Hook)
+bash check-secrets.sh --strict     # Exit 1 bei Fund (fuer CI)
 ```
 
-Oder als n8nac-spezifische Variante — die Credential-IDs in den .workflow.ts sind okay
-(sie verweisen nur auf n8n-interne IDs, nicht auf die echten Secrets).
+Erkennt 6 Kategorien (alle getestet):
+- Provider-Keys: OpenAI (`sk-`), Anthropic (`sk-ant-`), Google (`AIza`), GitHub (`ghp_`), AWS (`AKIA`), Slack (`xoxb-`/`xoxp-`)
+- Telegram Bot Tokens (`bot<id>:<token>`)
+- Hardcoded Passwoerter, Tokens, Bearer Headers
+- Gefaehrliche Dateien im Staging (`.env`, `credentials.json`, `*.pem`)
+
+0 False Positives bei bestehenden Workflow-Dateien (n8n Credential-IDs werden korrekt ignoriert).
+
+**3. Mermaid-Diagramme im README** — DONE
+
+Alle ASCII-Diagramme durch Mermaid ersetzt:
+- Entwicklungs-Pipeline (graph LR)
+- Alle 5 Workflow-Diagramme (WF1-WF5)
+- Vollautomatisierter Zyklus mit Fehler-Schleife
 
 ### Mittelfristig (naechste Workflows)
 
-**3. Per-Workflow Detail-Seiten**
+**1. Per-Workflow Detail-Seiten**
 
 Wenn das Projekt waechst (WF6+), lohnt sich eine Aufspaltung:
 ```
@@ -187,27 +197,7 @@ docs/
 └── ...
 ```
 
-**4. Mermaid-Diagramme im README**
-
-GitHub rendert Mermaid nativ in Markdown. Die ASCII-Diagramme im README koennten
-durch Mermaid-Bloecke ersetzt werden:
-
-````markdown
-```mermaid
-graph LR
-    A[Schedule 07:00] --> B[RSS Feeds]
-    B --> C[Gemini Bewertung]
-    C --> D[Top 5 Digest]
-    D --> E[Telegram]
-```
-````
-
-Vorteil: Wird direkt auf GitHub gerendert, keine externe Abhaengigkeit.
-Nachteil: ASCII-Diagramme funktionieren ueberall (auch in Terminals, git log, etc.).
-
-Empfehlung: **Beides beibehalten** — Mermaid fuer GitHub-Ansicht, ASCII fuer README-Header.
-
-**5. Workflow-Validierung automatisieren**
+**2. Workflow-Validierung automatisieren**
 
 Das Template hat `npm run validate` fuer JSON. Fuer unseren TypeScript-Ansatz:
 ```bash
@@ -217,7 +207,7 @@ npx tsc --noEmit --project workflows/local_5678_marius\ _j/personal/tsconfig.jso
 
 ### Langfristig (ab 10+ Workflows)
 
-**6. Workflow-Katalog mit Metadaten**
+**3. Workflow-Katalog mit Metadaten**
 
 Eine `workflows.json` als Katalog:
 ```json
@@ -236,7 +226,7 @@ Eine `workflows.json` als Katalog:
 ```
 Kann fuer automatische README-Generierung, Suche und Filterung genutzt werden.
 
-**7. Changelog pro Workflow**
+**4. Changelog pro Workflow**
 
 Wenn Workflows iteriert werden (v2, v3, etc.):
 ```markdown
@@ -250,7 +240,7 @@ Wenn Workflows iteriert werden (v2, v3, etc.):
 - Session-Memory fuer wiederkehrende User
 ```
 
-**8. Community-Beitrag: Einzelne Workflows als eigenes Template-Repo**
+**5. Community-Beitrag: Einzelne Workflows als eigenes Template-Repo**
 
 Wenn ein Workflow besonders gut ist (z.B. WF5 Multi-Agent Support),
 kann er als eigenes Repo nach dem Template-Muster veroeffentlicht werden:
@@ -272,26 +262,29 @@ mj-deving/n8n-multi-agent-support
 Struktur            1 Repo = 1 Workflow         1 Repo = N Workflows
 Workflow-Format     JSON Export                  TypeScript (n8n-as-code)
 Dokumentation       README + Pages              README + Pages + Referenzen
-Diagramme           Mermaid (Platzhalter)       Mermaid (echte Flows)
+Diagramme           Mermaid (Platzhalter)       Mermaid (echte Flows, README + Pages)
 Tests               Keine                        Automatisiert (Webhook + API)
-CI/CD               Pages Deploy                 Pages Deploy
-Issue Tracking      Beads + GitHub Issues        GitHub Issues
+CI/CD               Pages Deploy                 Pages Deploy + Secret-Check Hook
+Secret-Schutz       npm run check-secrets        Pre-Commit Hook (6 Provider-Patterns)
+Issue Tracking      Beads + GitHub Issues        GitHub Issues (angepasste Templates)
 Zielgruppe          Community/Marketplace        Persoenliches Lernprojekt
 ```
 
 ### Staerken des Templates, die wir nutzen
-- Professionelle GitHub Pages Praesentation
+- Professionelle GitHub Pages Praesentation (live unter mj-deving.github.io/n8n-autopilot)
 - Strukturierte Issue Templates mit n8n-spezifischen Feldern
 - Mermaid-Diagramme als Standard fuer Workflow-Visualisierung
+- Secret-Check Konzept (erweitert auf 6 Provider + Pre-Commit Hook)
 - Saubere .gitignore mit Credential-Schutz
 
 ### Staerken unseres Ansatzes, die das Template nicht hat
 - TypeScript statt JSON (typsicher, versionierbar, diffbar)
 - Automatisierte Test-Pipeline (Webhook POST + n8n-check.sh)
 - Multi-Workflow-Management in einem Repo
+- Pre-Commit Hook statt manueller npm-Script (blockt Commits automatisch)
 - Referenz-Dokumentation (n8n-referenz.md, n8nac-referenz.md)
 - Gelernte Patterns und Gotchas dokumentiert
 
 ---
 
-*Erstellt am 2026-03-12 | Basierend auf [n8n-workflow-template](https://github.com/jeremylongshore/n8n-workflow-template) (MIT License)*
+*Stand: 2026-03-12 | Basierend auf [n8n-workflow-template](https://github.com/jeremylongshore/n8n-workflow-template) (MIT License)*

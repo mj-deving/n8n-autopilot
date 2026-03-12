@@ -429,6 +429,13 @@ AI-gestuetzte Lerninhalte und Wissensmanagement.
 
 ## Naechste Schritte
 
+**Infrastruktur (erledigt):**
+- ~~GitHub Pages~~ — Live unter [mj-deving.github.io/n8n-autopilot](https://mj-deving.github.io/n8n-autopilot/)
+- ~~Mermaid-Diagramme~~ — Alle Workflow-Flows als Mermaid im README + Pages
+- ~~Secret-Check~~ — Pre-Commit Hook blockiert Credentials automatisch
+- ~~Issue Templates~~ — Bug Reports + Feature Requests mit WF-Dropdown
+
+**Naechste Workflows:**
 1. **Ollama auf VPS** — Lokales LLM als Fallback bei Gemini Rate-Limits
 2. **Google Sheets Integration** — Logging und Reporting fuer alle Workflows
 3. **Error Workflows** — Zentrale Fehlerbehandlung mit Retry-Logik
