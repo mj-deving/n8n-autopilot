@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n-autopilot — AI Workflow Dokumentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-muted: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --green: #3fb950;
+            --orange: #d29922;
+            --red: #f85149;
+            --purple: #bc8cff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+        header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        header h1 span { color: var(--accent); }
+        header p { color: var(--text-muted); font-size: 1.1rem; }
+        .badges { margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+        .badge {
+            display: inline-block; padding: 0.25rem 0.75rem; border-radius: 2rem;
+            font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border);
+        }
+        .badge-green { color: var(--green); border-color: var(--green); }
+        .badge-blue { color: var(--accent); border-color: var(--accent); }
+        .badge-orange { color: var(--orange); border-color: var(--orange); }
+        .badge-purple { color: var(--purple); border-color: var(--purple); }
+
+        /* Navigation */
+        nav {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem; margin-bottom: 2.5rem;
+        }
+        nav a {
+            display: block; padding: 0.75rem 1rem; background: var(--surface);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--text); text-decoration: none; font-size: 0.9rem;
+            transition: border-color 0.2s, transform 0.1s;
+        }
+        nav a:hover { border-color: var(--accent); transform: translateY(-1px); }
+        nav a .wf-num { color: var(--accent); font-weight: 700; display: block; font-size: 0.8rem; }
+
+        /* Tech Stack */
+        .stack-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem; margin-bottom: 2.5rem;
+        }
+        .stack-item {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+            padding: 1rem; display: flex; align-items: center; gap: 0.75rem;
+        }
+        .stack-icon { font-size: 1.5rem; width: 2rem; text-align: center; }
+        .stack-label { font-size: 0.85rem; color: var(--text-muted); }
+        .stack-value { font-weight: 600; }
+
+        /* Workflow Cards */
+        .wf-section { margin-bottom: 3rem; scroll-margin-top: 1rem; }
+        .wf-header {
+            display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;
+            padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
+        }
+        .wf-number {
+            background: var(--accent); color: var(--bg); width: 2.5rem; height: 2.5rem;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.1rem; flex-shrink: 0;
+        }
+        .wf-title { font-size: 1.4rem; }
+        .wf-meta { color: var(--text-muted); font-size: 0.85rem; }
+
+        .wf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        @media (max-width: 768px) { .wf-grid { grid-template-columns: 1fr; } }
+
+        .wf-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+            padding: 1rem;
+        }
+        .wf-card h4 { color: var(--accent); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .wf-card ul { list-style: none; padding: 0; }
+        .wf-card li { padding: 0.2rem 0; font-size: 0.9rem; }
+        .wf-card li::before { content: ""; display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; margin-right: 0.5rem; vertical-align: middle; }
+
+        .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin: 0.1rem; }
+        .tag-node { background: #1f3044; color: var(--accent); }
+        .tag-ai { background: #2d1f44; color: var(--purple); }
+        .tag-trigger { background: #1f3320; color: var(--green); }
+
+        /* Mermaid */
+        .mermaid-wrap {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+            padding: 1.5rem; margin-bottom: 1rem; overflow-x: auto;
+        }
+        .mermaid { text-align: center; }
+
+        /* Test section */
+        .test-box {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+            padding: 1rem; margin-top: 1rem;
+        }
+        .test-box h4 { color: var(--green); margin-bottom: 0.5rem; }
+        code {
+            background: #1a2332; padding: 0.15rem 0.4rem; border-radius: 3px;
+            font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem;
+        }
+        pre {
+            background: #1a2332; padding: 1rem; border-radius: 6px; overflow-x: auto;
+            font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; line-height: 1.5;
+        }
+
+        /* Patterns */
+        .patterns-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 0.75rem; margin-top: 1rem;
+        }
+        .pattern-card {
+            background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+            padding: 1rem;
+        }
+        .pattern-card h4 { color: var(--purple); font-size: 0.9rem; margin-bottom: 0.3rem; }
+        .pattern-card p { color: var(--text-muted); font-size: 0.85rem; }
+
+        /* Footer */
+        footer {
+            text-align: center; padding: 2rem 0; margin-top: 2rem;
+            border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.85rem;
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        h2 { font-size: 1.3rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        h3 { font-size: 1.1rem; margin: 1rem 0 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <!-- ============================================================ -->
+        <!-- HEADER                                                        -->
+        <!-- ============================================================ -->
+        <header>
+            <h1><span>n8n-autopilot</span></h1>
+            <p>AI-Workflow-Automatisierung mit n8n-as-code</p>
+            <p style="margin-top:0.3rem;">5 AI-Workflows, vollstaendig als TypeScript, automatisiert gebaut und getestet</p>
+            <div class="badges">
+                <span class="badge badge-green">5 Workflows</span>
+                <span class="badge badge-blue">n8n-as-code</span>
+                <span class="badge badge-orange">Gemini Free Tier</span>
+                <span class="badge badge-purple">0 EUR Kosten</span>
+            </div>
+        </header>
+
+        <!-- ============================================================ -->
+        <!-- NAVIGATION                                                    -->
+        <!-- ============================================================ -->
+        <nav>
+            <a href="#wf1"><span class="wf-num">WF1</span>AI News-Kurator</a>
+            <a href="#wf2"><span class="wf-num">WF2</span>AI Text-Assistent</a>
+            <a href="#wf3"><span class="wf-num">WF3</span>AI Personal Agent</a>
+            <a href="#wf4"><span class="wf-num">WF4</span>AI Dokument-Pipeline</a>
+            <a href="#wf5"><span class="wf-num">WF5</span>AI Multi-Agent Support</a>
+        </nav>
+
+        <!-- ============================================================ -->
+        <!-- TECH STACK                                                    -->
+        <!-- ============================================================ -->
+        <h2>Tech-Stack</h2>
+        <div class="stack-grid">
+            <div class="stack-item">
+                <div class="stack-icon">&#9881;</div>
+                <div><div class="stack-label">Workflow-Engine</div><div class="stack-value">n8n 2.11.2 (Self-Hosted)</div></div>
+            </div>
+            <div class="stack-item">
+                <div class="stack-icon">&#128187;</div>
+                <div><div class="stack-label">Code-First CLI</div><div class="stack-value">n8n-as-code 1.0.0</div></div>
+            </div>
+            <div class="stack-item">
+                <div class="stack-icon">&#129302;</div>
+                <div><div class="stack-label">AI / LLM</div><div class="stack-value">Gemini 2.0 Flash (Free)</div></div>
+            </div>
+            <div class="stack-item">
+                <div class="stack-icon">&#128172;</div>
+                <div><div class="stack-label">Benachrichtigungen</div><div class="stack-value">Telegram Bot</div></div>
+            </div>
+            <div class="stack-item">
+                <div class="stack-icon">&#128295;</div>
+                <div><div class="stack-label">Test-Automation</div><div class="stack-value">Python + n8n REST API</div></div>
+            </div>
+            <div class="stack-item">
+                <div class="stack-icon">&#128176;</div>
+                <div><div class="stack-label">Kosten</div><div class="stack-value">0 EUR (alles Free Tier)</div></div>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- WF1: AI NEWS-KURATOR                                          -->
+        <!-- ============================================================ -->
+        <section class="wf-section" id="wf1">
+            <div class="wf-header">
+                <div class="wf-number">1</div>
+                <div>
+                    <div class="wf-title">AI News-Kurator</div>
+                    <div class="wf-meta">10 Nodes &bull; Schedule Trigger &bull; ID: 5bWFv8sC4a3OvMgP</div>
+                </div>
+            </div>
+
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph LR
+    A["&#9200; Schedule<br/>07:00 taeglich"] --> B["&#128240; RSS Tech<br/>Ars Technica"]
+    A --> C["&#128240; RSS AI<br/>TechCrunch AI"]
+    A --> D["&#128240; RSS Business<br/>Hacker News"]
+    B --> E["&#128256; Merge<br/>Feeds zusammen"]
+    C --> E
+    D --> E
+    E --> F["&#9986; Limit<br/>Max 15 Artikel"]
+    F --> G["&#129302; Gemini Flash<br/>Artikel-Analyse"]
+    G --> H["&#128187; Code<br/>Top 5 Digest"]
+    H --> I["&#128172; Telegram<br/>Digest senden"]
+
+    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style G fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style I fill:#238636,stroke:#3fb950,color:#fff
+                </pre>
+            </div>
+
+            <div class="wf-grid">
+                <div class="wf-card">
+                    <h4>Konzepte</h4>
+                    <ul>
+                        <li>Schedule Trigger (Cron 07:00)</li>
+                        <li>3 parallele RSS Feeds</li>
+                        <li>chainLlm + Gemini Bewertung</li>
+                        <li>Code Node: JSON parsen &amp; Top-5 sortieren</li>
+                        <li>Telegram Digest</li>
+                    </ul>
+                </div>
+                <div class="wf-card">
+                    <h4>Node-Typen</h4>
+                    <div>
+                        <span class="tag tag-trigger">scheduleTrigger</span>
+                        <span class="tag tag-node">rssFeedRead &times;3</span>
+                        <span class="tag tag-node">merge</span>
+                        <span class="tag tag-node">limit</span>
+                        <span class="tag tag-ai">chainLlm</span>
+                        <span class="tag tag-ai">lmChatGoogleGemini</span>
+                        <span class="tag tag-node">code</span>
+                        <span class="tag tag-node">telegram</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-box">
+                <h4>Test</h4>
+                <p>Manuell in der n8n UI (Schedule Trigger kann nicht per Webhook ausgeloest werden)</p>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- WF2: AI TEXT-ASSISTENT                                        -->
+        <!-- ============================================================ -->
+        <section class="wf-section" id="wf2">
+            <div class="wf-header">
+                <div class="wf-number">2</div>
+                <div>
+                    <div class="wf-title">AI Text-Assistent</div>
+                    <div class="wf-meta">8 Nodes &bull; Webhook POST /classify &bull; ID: 4d077yRyHsV0v1Va</div>
+                </div>
+            </div>
+
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph LR
+    A["&#127760; Webhook<br/>POST /classify"] --> B["&#129302; Gemini Flash<br/>AI Analyse"]
+    B --> C["&#128187; Code<br/>Ergebnis parsen"]
+    C --> D{"&#128256; Switch<br/>Dringlichkeit"}
+    D -->|hoch| E["&#128172; Telegram<br/>DRINGEND"]
+    D -->|mittel| F["&#128172; Telegram<br/>Normal"]
+    D -->|niedrig| G["&#128172; Webhook<br/>Response"]
+    E --> G
+    F --> G
+
+    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style B fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style D fill:#9e6a03,stroke:#d29922,color:#fff
+    style E fill:#da3633,stroke:#f85149,color:#fff
+                </pre>
+            </div>
+
+            <div class="wf-grid">
+                <div class="wf-card">
+                    <h4>Konzepte</h4>
+                    <ul>
+                        <li>Webhook Input/Output (responseNode)</li>
+                        <li>chainLlm + Gemini Klassifizierung</li>
+                        <li>Code Node: JSON-Extraktion aus LLM-Antwort</li>
+                        <li>Switch: 3-Wege Routing nach Dringlichkeit</li>
+                        <li>Conditional Telegram Alerts</li>
+                    </ul>
+                </div>
+                <div class="wf-card">
+                    <h4>Node-Typen</h4>
+                    <div>
+                        <span class="tag tag-trigger">webhook</span>
+                        <span class="tag tag-ai">chainLlm</span>
+                        <span class="tag tag-ai">lmChatGoogleGemini</span>
+                        <span class="tag tag-node">code</span>
+                        <span class="tag tag-node">switch</span>
+                        <span class="tag tag-node">telegram &times;2</span>
+                        <span class="tag tag-node">respondToWebhook</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-box">
+                <h4>Test (automatisiert)</h4>
+<pre>python -c "
+import urllib.request, json
+data = json.dumps({'text': 'Server down seit 2h!', 'source': 'ticket'}).encode()
+req = urllib.request.Request('http://localhost:5678/webhook/classify',
+    data=data, headers={'Content-Type': 'application/json'})
+print(json.loads(urllib.request.urlopen(req).read()))
+"</pre>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- WF3: AI PERSONAL AGENT                                        -->
+        <!-- ============================================================ -->
+        <section class="wf-section" id="wf3">
+            <div class="wf-header">
+                <div class="wf-number">3</div>
+                <div>
+                    <div class="wf-title">AI Personal Agent</div>
+                    <div class="wf-meta">7 Nodes &bull; Chat Trigger &bull; ID: 7Q5gA7icrwirEip4</div>
+                </div>
+            </div>
+
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph TB
+    A["&#128488; Chat Trigger"] --> B["&#129302; Personal Agent"]
+    B -.->|ai_languageModel| C["&#129302; Gemini Flash"]
+    B -.->|ai_memory| D["&#128203; Buffer Memory<br/>10 Nachrichten"]
+    B -.->|ai_tool| E["&#129504; Denk-Tool"]
+    B -.->|ai_tool| F["&#129518; Rechner"]
+    B -.->|ai_tool| G["&#128336; DatumZeit"]
+
+    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style B fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style C fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style E fill:#8b5cf6,stroke:#a78bfa,color:#fff
+    style F fill:#8b5cf6,stroke:#a78bfa,color:#fff
+    style G fill:#8b5cf6,stroke:#a78bfa,color:#fff
+                </pre>
+            </div>
+
+            <div class="wf-grid">
+                <div class="wf-card">
+                    <h4>Konzepte</h4>
+                    <ul>
+                        <li>Agent Node mit Function Calling</li>
+                        <li>3 Tools: Denken, Rechnen, Datum/Uhrzeit</li>
+                        <li>Buffer Memory (Session-basiert, 10 Messages)</li>
+                        <li>toolCode mit explizitem inputSchema</li>
+                        <li>Gemini braucht <code>type: OBJECT</code> Schema</li>
+                    </ul>
+                </div>
+                <div class="wf-card">
+                    <h4>Node-Typen</h4>
+                    <div>
+                        <span class="tag tag-trigger">chatTrigger</span>
+                        <span class="tag tag-ai">agent</span>
+                        <span class="tag tag-ai">lmChatGoogleGemini</span>
+                        <span class="tag tag-ai">memoryBufferWindow</span>
+                        <span class="tag tag-ai">toolCode &times;2</span>
+                        <span class="tag tag-ai">toolCalculator</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-box">
+                <h4>Test</h4>
+                <p>Manuell via n8n Chat UI (Chat Trigger API nicht exponiert)</p>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- WF4: AI DOKUMENT-PIPELINE                                     -->
+        <!-- ============================================================ -->
+        <section class="wf-section" id="wf4">
+            <div class="wf-header">
+                <div class="wf-number">4</div>
+                <div>
+                    <div class="wf-title">AI Dokument-Pipeline</div>
+                    <div class="wf-meta">8 Nodes &bull; Webhook POST /dokument &bull; ID: yCDukWYNtDQ8O4de</div>
+                </div>
+            </div>
+
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph LR
+    A["&#127760; Webhook<br/>POST /dokument"] --> B["&#129302; Gemini Flash<br/>Dokument-Analyse"]
+    B --> C["&#128187; Code<br/>Ergebnis parsen"]
+    C --> D{"&#128256; Switch<br/>Dokument-Typ"}
+    D -->|Rechnung| E["&#128172; Telegram<br/>Wichtig"]
+    D -->|Vertrag| E
+    D -->|Sonstiges| F["&#128172; Telegram<br/>Info"]
+    E --> G["&#128172; Webhook<br/>Response"]
+    F --> G
+
+    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style B fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style D fill:#9e6a03,stroke:#d29922,color:#fff
+    style E fill:#da3633,stroke:#f85149,color:#fff
+                </pre>
+            </div>
+
+            <div class="wf-grid">
+                <div class="wf-card">
+                    <h4>Konzepte</h4>
+                    <ul>
+                        <li>Dokument-Klassifizierung (Rechnung/Vertrag/Beleg/Sonstiges)</li>
+                        <li>Structured Output: Typ, Absender, Datum, Betrag</li>
+                        <li>Multi-Branch Routing nach Dokumenttyp</li>
+                        <li>Erster vollautomatisch gebauter WF (Zero Manual Fixes)</li>
+                    </ul>
+                </div>
+                <div class="wf-card">
+                    <h4>Node-Typen</h4>
+                    <div>
+                        <span class="tag tag-trigger">webhook</span>
+                        <span class="tag tag-ai">chainLlm</span>
+                        <span class="tag tag-ai">lmChatGoogleGemini</span>
+                        <span class="tag tag-node">code</span>
+                        <span class="tag tag-node">switch</span>
+                        <span class="tag tag-node">telegram &times;2</span>
+                        <span class="tag tag-node">respondToWebhook</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-box">
+                <h4>Test (automatisiert)</h4>
+<pre>python -c "
+import urllib.request, json
+data = json.dumps({
+    'text': 'Rechnung Nr. 2024-001 von Firma ABC, 1.299 EUR, faellig 15.04.2026',
+    'source': 'email', 'filename': 'rechnung-2024-001.pdf'
+}).encode()
+req = urllib.request.Request('http://localhost:5678/webhook/dokument',
+    data=data, headers={'Content-Type': 'application/json'})
+print(json.loads(urllib.request.urlopen(req).read()))
+"</pre>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- WF5: AI MULTI-AGENT SUPPORT                                   -->
+        <!-- ============================================================ -->
+        <section class="wf-section" id="wf5">
+            <div class="wf-header">
+                <div class="wf-number">5</div>
+                <div>
+                    <div class="wf-title">AI Multi-Agent Support System</div>
+                    <div class="wf-meta">16 Nodes &bull; 4 Gemini LLMs &bull; Webhook POST /support &bull; ID: pDLr3eWlGs9ebf79</div>
+                </div>
+            </div>
+
+            <div class="mermaid-wrap">
+                <pre class="mermaid">
+graph TB
+    A["&#127760; Webhook<br/>POST /support"] --> B["&#129302; Dispatcher<br/>Gemini Klassifizierung"]
+    B --> C["&#128187; Code<br/>Kategorie parsen"]
+    C --> D{"&#128256; Switch<br/>Route"}
+
+    D -->|tech| E["&#129302; Tech-Spezialist<br/>Gemini"]
+    D -->|sales| F["&#129302; Sales-Spezialist<br/>Gemini"]
+    D -->|faq| G["&#129302; FAQ-Spezialist<br/>Gemini"]
+    D -->|unknown| H["&#128187; Fallback<br/>Code"]
+
+    E --> I["&#128187; Qualitaets-Check<br/>Score 1-10"]
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J{"&#128200; If<br/>Dringlichkeit &gt; 7?"}
+    J -->|Ja| K["&#128172; Telegram<br/>DRINGEND Alert"]
+    J -->|Nein| L["&#128172; Webhook<br/>Response"]
+    K --> L
+
+    style A fill:#1f6feb,stroke:#58a6ff,color:#fff
+    style B fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style D fill:#9e6a03,stroke:#d29922,color:#fff
+    style E fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style F fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style G fill:#6e40c9,stroke:#bc8cff,color:#fff
+    style J fill:#9e6a03,stroke:#d29922,color:#fff
+    style K fill:#da3633,stroke:#f85149,color:#fff
+                </pre>
+            </div>
+
+            <div class="wf-grid">
+                <div class="wf-card">
+                    <h4>Konzepte</h4>
+                    <ul>
+                        <li>Dispatcher-Pattern: AI klassifiziert, Switch routet</li>
+                        <li>4 spezialisierte Gemini-LLMs</li>
+                        <li>Qualitaets-Scoring (Laenge + Inhalt)</li>
+                        <li>Conditional Telegram bei Dringlichkeit &gt; 7</li>
+                        <li><code>$('Node Name').item.json</code> fuer Cross-Branch-Daten</li>
+                        <li>Markdown-Stripping vor Telegram-Versand</li>
+                    </ul>
+                </div>
+                <div class="wf-card">
+                    <h4>Node-Typen</h4>
+                    <div>
+                        <span class="tag tag-trigger">webhook</span>
+                        <span class="tag tag-ai">chainLlm &times;4</span>
+                        <span class="tag tag-ai">lmChatGoogleGemini &times;4</span>
+                        <span class="tag tag-node">code &times;3</span>
+                        <span class="tag tag-node">switch</span>
+                        <span class="tag tag-node">if</span>
+                        <span class="tag tag-node">telegram</span>
+                        <span class="tag tag-node">respondToWebhook</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-box">
+                <h4>Test (automatisiert — 4 Szenarien)</h4>
+<pre>python -c "
+import urllib.request, json, time
+tests = [
+    {'text': 'Server Error 500 seit heute morgen', 'user': 'admin', 'channel': 'ticket'},
+    {'text': 'Was kostet das Enterprise-Paket?', 'user': 'kunde1', 'channel': 'email'},
+    {'text': 'Wie kann ich mein Passwort aendern?', 'user': 'user42', 'channel': 'chat'},
+    {'text': 'xyz abc random text', 'user': 'test', 'channel': 'api'},
+]
+for t in tests:
+    data = json.dumps(t).encode()
+    req = urllib.request.Request('http://localhost:5678/webhook/support',
+        data=data, headers={'Content-Type': 'application/json'})
+    resp = json.loads(urllib.request.urlopen(req).read())
+    print(f'{t[\"user\"]}: {resp.get(\"kategorie\",\"?\")} (Score: {resp.get(\"qualitaetsScore\",\"?\")})')
+    time.sleep(10)  # Gemini Rate Limit
+"</pre>
+            </div>
+        </section>
+
+        <!-- ============================================================ -->
+        <!-- GELERNTE PATTERNS                                             -->
+        <!-- ============================================================ -->
+        <h2 id="patterns">Gelernte Patterns</h2>
+        <div class="patterns-grid">
+            <div class="pattern-card">
+                <h4>Dispatcher + Switch</h4>
+                <p>AI klassifiziert Eingabe, Switch routet zu spezialisierten Branches.</p>
+            </div>
+            <div class="pattern-card">
+                <h4>chainLlm + Code Parse</h4>
+                <p>LLM-Antwort als Text &rarr; Code Node extrahiert JSON &rarr; strukturiert weiter.</p>
+            </div>
+            <div class="pattern-card">
+                <h4>.uses() fuer AI Sub-Nodes</h4>
+                <p>LLM, Memory und Tools IMMER via <code>.uses()</code>, nie <code>.out().to()</code>.</p>
+            </div>
+            <div class="pattern-card">
+                <h4>$('Node') Referenz</h4>
+                <p>Daten von frueheren Nodes ueber Branches hinweg mit <code>$('Node Name').item.json</code>.</p>
+            </div>
+            <div class="pattern-card">
+                <h4>Webhook + responseNode</h4>
+                <p>Async-Verarbeitung mit synchroner HTTP-Antwort am Ende des Flows.</p>
+            </div>
+            <div class="pattern-card">
+                <h4>Conditional Telegram</h4>
+                <p>If-Node fuer bedingte Benachrichtigungen basierend auf Scores/Dringlichkeit.</p>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- GOTCHAS                                                       -->
+        <!-- ============================================================ -->
+        <h2 id="gotchas" style="margin-top: 2rem;">Gotchas &amp; Troubleshooting</h2>
+        <div class="wf-card" style="margin-top: 1rem;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:0.5rem; font-weight:600; color:var(--red); width:30%;">Gemini + Tools</td>
+                    <td style="padding:0.5rem;">Alle Tools brauchen <code>type: OBJECT</code> Schema. Built-in <code>toolThink</code> scheitert &mdash; <code>toolCode</code> mit <code>inputSchema</code> nutzen.</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:0.5rem; font-weight:600; color:var(--red);">n8nac push</td>
+                    <td style="padding:0.5rem;">NUR Dateiname, KEIN Pfad. <code>npx n8nac push 01-ai-news-kurator.workflow.ts</code></td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:0.5rem; font-weight:600; color:var(--red);">Webhook nach Push</td>
+                    <td style="padding:0.5rem;">Deactivate &rarr; Reactivate noetig damit Webhook-ID registriert wird.</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:0.5rem; font-weight:600; color:var(--red);">Regex in jsCode</td>
+                    <td style="padding:0.5rem;">TS &rarr; JSON &rarr; JS Escaping-Kette unzuverlaessig. <code>indexOf</code>/<code>lastIndexOf</code> statt Regex fuer JSON-Extraktion.</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:0.5rem; font-weight:600; color:var(--red);">Telegram Markdown</td>
+                    <td style="padding:0.5rem;">Abgeschnittenes <code>**</code> crasht. LLM-Output strippen: <code>.split("*").join("")</code></td>
+                </tr>
+                <tr>
+                    <td style="padding:0.5rem; font-weight:600; color:var(--orange);">Gemini Rate Limit</td>
+                    <td style="padding:0.5rem;">Free Tier = 15 req/min. Multi-Agent WFs: Tests mindestens 8-10s auseinander.</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- FOOTER                                                        -->
+        <!-- ============================================================ -->
+        <footer>
+            <p>n8n-autopilot &mdash; Marius J &bull; Stand: 2026-03-12</p>
+            <p><a href="https://github.com/mj-deving/n8n-autopilot">GitHub Repository</a> &bull; Alle Workflows mit Google Gemini Free Tier (0 EUR)</p>
+        </footer>
+
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#1f6feb',
+                primaryTextColor: '#e6edf3',
+                primaryBorderColor: '#58a6ff',
+                lineColor: '#8b949e',
+                secondaryColor: '#161b22',
+                tertiaryColor: '#21262d',
+            }
+        });
+    </script>
+</body>
+</html>

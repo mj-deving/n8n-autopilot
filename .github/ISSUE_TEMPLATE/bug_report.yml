@@ -1,0 +1,60 @@
+name: Bug Report
+description: Einen Fehler in einem Workflow melden
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Betroffener Workflow
+      options:
+        - WF1 - AI News-Kurator
+        - WF2 - AI Text-Assistent
+        - WF3 - AI Personal Agent
+        - WF4 - AI Dokument-Pipeline
+        - WF5 - AI Multi-Agent Support
+        - Allgemein / Infrastruktur
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Komponente
+      options:
+        - Webhook / Trigger
+        - AI / LLM (Gemini)
+        - Code Node
+        - Switch / Routing
+        - Telegram
+        - n8nac CLI
+        - Test-Pipeline
+        - Sonstiges
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung
+      description: Was passiert und was sollte stattdessen passieren?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Schritte zum Reproduzieren
+      description: Wie kann der Fehler reproduziert werden?
+      value: |
+        1. ...
+        2. ...
+        3. ...
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Fehlermeldung
+      description: Output von n8n-check.sh oder n8n Execution Log
+      render: shell
+  - type: input
+    id: n8n-version
+    attributes:
+      label: n8n Version
+      placeholder: "2.11.2"

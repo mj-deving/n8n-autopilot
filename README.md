@@ -1,7 +1,7 @@
 # n8n-autopilot: AI-Workflow-Automatisierung mit n8n-as-code
 
 > 5 AI-Workflows, vollstaendig als TypeScript, automatisiert gebaut und getestet
-> Marius J | Stand: 2026-03-11
+> Marius J | Stand: 2026-03-12
 
 ---
 
@@ -11,25 +11,14 @@ Ein Lernprojekt, das zeigt, wie man mit **n8n** + **n8n-as-code (n8nac)** komple
 AI-Workflows vollstaendig code-first entwickelt — ohne die n8n-UI zum Bauen zu nutzen.
 Alle Workflows werden als TypeScript geschrieben, per CLI deployed und automatisiert getestet.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    Entwicklungs-Pipeline                         │
-│                                                                  │
-│   Claude Code          n8nac CLI          n8n Server             │
-│   ┌──────────┐        ┌──────────┐       ┌──────────┐          │
-│   │ .workflow │─push──>│ validate │──────>│ deploy   │          │
-│   │ .ts       │<─pull──│ convert  │<──────│ execute  │          │
-│   │ schreiben │        │ skills   │       │ webhook  │          │
-│   └──────────┘        └──────────┘       └──────────┘          │
-│        │                                       │                 │
-│        v                                       v                 │
-│   ┌──────────┐                          ┌──────────┐           │
-│   │   Git    │                          │ n8n API  │           │
-│   │ version  │                          │ activate │           │
-│   │ control  │                          │ test     │           │
-│   └──────────┘                          │ debug    │           │
-│                                         └──────────┘           │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    CC["Claude Code<br/>.workflow.ts schreiben"] -->|push| CLI["n8nac CLI<br/>validate + convert"]
+    CLI -->|deploy| N8N["n8n Server<br/>execute + webhook"]
+    N8N -->|pull| CLI
+    CLI -->|pull| CC
+    CC --> GIT["Git<br/>version control"]
+    N8N --> API["n8n API<br/>activate + test + debug"]
 ```
 
 ---
@@ -52,68 +41,96 @@ Alle Workflows werden als TypeScript geschrieben, per CLI deployed und automatis
 ## Die 5 Workflows
 
 ### WF1: AI News-Kurator
+
+```mermaid
+graph LR
+    A["Schedule 07:00"] --> B["RSS Tech"]
+    A --> C["RSS AI"]
+    A --> D["RSS Business"]
+    B --> E["Merge"]
+    C --> E
+    D --> E
+    E --> F["Limit 15"]
+    F --> G["Gemini Bewertung"]
+    G --> H["Top 5 Digest"]
+    H --> I["Telegram"]
 ```
-Schedule 07:00 → RSS Feeds → Gemini Bewertung → Filter Score ≥ 7 → Telegram Digest
-```
-- **Nodes:** 8 | **Trigger:** Schedule | **Test:** Manuell in UI
-- **Konzepte:** Schedule Trigger, RSS, AI-Bewertung, Filter, Merge
+
+- **Nodes:** 10 | **Trigger:** Schedule | **Test:** Manuell in UI
+- **Konzepte:** Schedule Trigger, 3 parallele RSS Feeds, AI-Bewertung, Score-Sortierung, Telegram Digest
 
 ### WF2: AI Text-Assistent
+
+```mermaid
+graph LR
+    A["POST /classify"] --> B["Gemini Analyse"]
+    B --> C["JSON parsen"]
+    C --> D{"Dringlichkeit?"}
+    D -->|hoch| E["Telegram DRINGEND"]
+    D -->|mittel| F["Telegram Normal"]
+    D -->|niedrig| G["Webhook Response"]
+    E --> G
+    F --> G
 ```
-POST /classify → Gemini Analyse → JSON parsen → Switch → Telegram + Webhook Response
-```
+
 - **Nodes:** 8 | **Trigger:** Webhook | **Test:** Automatisiert (HTTP POST)
-- **Konzepte:** Webhook I/O, chainLlm, Code Node, Switch Routing
+- **Konzepte:** Webhook I/O, chainLlm, Code Node JSON-Extraktion, Switch 3-Wege-Routing
 
 ### WF3: AI Personal Agent
+
+```mermaid
+graph TB
+    A["Chat UI"] --> B["AI Agent"]
+    B -.->|LLM| C["Gemini Flash"]
+    B -.->|Memory| D["Buffer 10 Msg"]
+    B -.->|Tool| E["Denk-Tool"]
+    B -.->|Tool| F["Rechner"]
+    B -.->|Tool| G["DatumZeit"]
 ```
-Chat UI → AI Agent + Gemini + Memory + 3 Tools (Denken, Rechnen, Datum/Uhrzeit)
-```
+
 - **Nodes:** 7 | **Trigger:** Chat | **Test:** n8n Chat UI
-- **Konzepte:** Agent Node, Tool Use, Buffer Memory, Function Calling
+- **Konzepte:** Agent Node, Function Calling, 3 Tools, Buffer Memory, `.uses()` fuer AI Sub-Nodes
 
 ### WF4: AI Dokument-Pipeline
+
+```mermaid
+graph LR
+    A["POST /dokument"] --> B["Gemini Analyse"]
+    B --> C["JSON parsen"]
+    C --> D{"Dokument-Typ?"}
+    D -->|Rechnung| E["Telegram Wichtig"]
+    D -->|Vertrag| E
+    D -->|Sonstiges| F["Telegram Info"]
+    E --> G["Webhook Response"]
+    F --> G
 ```
-POST /dokument → Gemini Klassifizierung → Typ-Switch → Telegram Alerts → Response
-```
+
 - **Nodes:** 8 | **Trigger:** Webhook | **Test:** Automatisiert (HTTP POST)
-- **Konzepte:** Dokument-Analyse, Structured Output, Multi-Branch Routing
+- **Konzepte:** Dokument-Klassifizierung, Structured Output (Typ/Absender/Betrag), Multi-Branch Routing
 
 ### WF5: AI Multi-Agent Support System
-```
-POST /support → Dispatcher → Switch → [Tech|Sales|FAQ|Fallback] → Quality Score → Telegram bei Dringlichkeit > 7
-```
-- **Nodes:** 16 | **Trigger:** Webhook | **Test:** Automatisiert (4 Szenarien)
-- **Konzepte:** Multi-Agent-Orchestrierung, 4 Gemini LLMs, Dispatcher-Pattern, Conditional Alerts
 
+```mermaid
+graph TB
+    A["POST /support"] --> B["Dispatcher Gemini"]
+    B --> C["Kategorie parsen"]
+    C --> D{"Route Switch"}
+    D -->|tech| E["Tech-Spezialist"]
+    D -->|sales| F["Sales-Spezialist"]
+    D -->|faq| G["FAQ-Spezialist"]
+    D -->|unknown| H["Fallback Code"]
+    E --> I["Qualitaets-Check"]
+    F --> I
+    G --> I
+    H --> I
+    I --> J{"Dringlichkeit > 7?"}
+    J -->|Ja| K["Telegram DRINGEND"]
+    J -->|Nein| L["Webhook Response"]
+    K --> L
 ```
-                            ┌─────────────────────┐
-  POST /support ───────────>│  Dispatcher-Agent    │
-  {text, user, channel}     │  (Gemini: Classify)  │
-                            └──────────┬───────────┘
-                                       │
-                   ┌───────────────────┼───────────────────┐─────────────┐
-                   v                   v                   v             v
-            ┌────────────┐     ┌────────────┐     ┌────────────┐  ┌──────────┐
-            │  Tech-Agent │     │ Sales-Agent│     │ FAQ-Agent  │  │ Fallback │
-            │  (Gemini)   │     │ (Gemini)   │     │ (Gemini)   │  │ (Code)   │
-            └──────┬──────┘     └──────┬─────┘     └──────┬─────┘  └────┬─────┘
-                   │                   │                   │             │
-                   └───────────────────┴───────────────────┴─────────────┘
-                                       │
-                            ┌──────────v───────────┐
-                            │   Qualitaets-Check    │
-                            │   (Score 1-10)        │
-                            └──────────┬───────────┘
-                                       │
-                              Dringlichkeit > 7?
-                              /                \
-                           JA                  NEIN
-                            v                    v
-                     [Telegram Alert]     [Webhook Response]
-                            v
-                     [Webhook Response]
-```
+
+- **Nodes:** 16 | **Trigger:** Webhook | **Test:** Automatisiert (4 Szenarien)
+- **Konzepte:** Dispatcher-Pattern, 4 Gemini LLMs, Multi-Agent-Orchestrierung, Qualitaets-Scoring, Conditional Alerts
 
 ---
 
@@ -148,13 +165,20 @@ pro Node: OK/FAIL, Error-Messages und Output-Previews.
 ```
 n8n-autopilot/
 ├── README.md                          # Diese Datei
+├── TEMPLATE-REFERENZ.md               # Template-Analyse + Empfehlungen
 ├── n8n-referenz.md                    # n8n Plattform-Referenz
 ├── n8nac-referenz.md                  # n8n-as-code CLI Referenz
 ├── LERN-PIPELINE.md                   # Urspruenglicher Lernplan
 ├── NEXT-WF-VORSCHLAG.md              # WF5 Entwurf (umgesetzt)
 ├── n8n-check.sh                       # Execution-Checker Script
+├── check-secrets.sh                   # Credential-Leak-Schutz
 ├── n8nac-config.json                  # n8nac Konfiguration
 ├── AGENTS.md                          # Auto-generiert (AI-Kontext)
+├── .github/
+│   ├── workflows/pages.yml            # GitHub Pages Auto-Deploy
+│   └── ISSUE_TEMPLATE/                # Bug Report + Feature Request
+├── docs/
+│   └── index.html                     # GitHub Pages Site (Mermaid-Diagramme)
 └── workflows/
     └── local_5678_marius _j/
         └── personal/
@@ -222,22 +246,18 @@ n8n-autopilot/
 Die Kombination aus **n8nac CLI** + **n8n REST API** + **Claude Code** ermoeglicht
 einen vollstaendig automatisierten Entwicklungszyklus:
 
+```mermaid
+graph LR
+    A["1. Recherche<br/>n8nac skills search"] --> B["2. Code<br/>.workflow.ts"]
+    B --> C["3. Deploy<br/>n8nac push"]
+    C --> D["4. Aktivieren<br/>n8n API"]
+    D --> E["5. Testen<br/>HTTP POST"]
+    E --> F["6. Debuggen<br/>n8n-check.sh"]
+    F -->|Fehler| B
+    F -->|Erfolg| G["7. Committen<br/>git commit"]
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                  Vollautomatisierter Zyklus                      │
-│                                                                  │
-│  1. Recherche     npx n8nac skills search / node-info            │
-│  2. Code          .workflow.ts schreiben (Claude Code)           │
-│  3. Deploy        npx n8nac push                                 │
-│  4. Aktivieren    n8n API: activate/deactivate/activate          │
-│  5. Testen        HTTP POST an Webhook + Response parsen         │
-│  6. Debuggen      n8n-check.sh → Fehler analysieren → Fix       │
-│  7. Iterieren     Zurueck zu Schritt 2 bis alle Tests gruen     │
-│  8. Committen     git add + git commit                           │
-│                                                                  │
-│  Alles ohne einen einzigen Klick in der n8n UI.                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+
+> Alles ohne einen einzigen Klick in der n8n UI.
 
 ### Was geht vollautomatisch?
 
@@ -425,7 +445,9 @@ AI-gestuetzte Lerninhalte und Wissensmanagement.
 | [n8nac-referenz.md](n8nac-referenz.md) | n8n-as-code CLI: Alle Befehle, Syntax, Gotchas |
 | [LERN-PIPELINE.md](LERN-PIPELINE.md) | Urspruenglicher 4-Workflow-Lernplan |
 | [NEXT-WF-VORSCHLAG.md](NEXT-WF-VORSCHLAG.md) | WF5-Entwurf (umgesetzt) |
+| [TEMPLATE-REFERENZ.md](TEMPLATE-REFERENZ.md) | Template-Analyse: Was uebernommen, was empfohlen |
+| [docs/index.html](docs/index.html) | GitHub Pages: Workflow-Dokumentation mit Mermaid-Diagrammen |
 
 ---
 
-*Erstellt am 2026-03-11 | Alle Workflows mit Google Gemini Free Tier (0 EUR)*
+*Stand: 2026-03-12 | Alle Workflows mit Google Gemini Free Tier (0 EUR) | [GitHub Pages](https://mj-deving.github.io/n8n-autopilot/)*

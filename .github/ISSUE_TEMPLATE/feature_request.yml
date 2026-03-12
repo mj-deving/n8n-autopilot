@@ -1,0 +1,40 @@
+name: Feature Request
+description: Neuen Workflow oder Feature vorschlagen
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Art des Vorschlags
+      options:
+        - Neuer Workflow (WF6+)
+        - Erweiterung bestehender Workflow
+        - Neues Tool / Integration
+        - Test-Pipeline Verbesserung
+        - Dokumentation
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung
+      description: Was soll gebaut werden und warum?
+    validations:
+      required: true
+  - type: textarea
+    id: flow
+    attributes:
+      label: Gewuenschter Flow
+      description: Grobe Beschreibung des Datenflusses
+      placeholder: "Trigger → Verarbeitung → AI-Analyse → Output"
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioritaet
+      options:
+        - Hoch (blockiert andere Arbeit)
+        - Mittel (naechster logischer Schritt)
+        - Niedrig (nice-to-have)
+    validations:
+      required: true

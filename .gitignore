@@ -2,3 +2,23 @@ node_modules/
 .n8n-state.json
 *.log
 .env
+.env.*
+
+# Credentials & Secrets
+credentials.json
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# n8n
+.n8n/
