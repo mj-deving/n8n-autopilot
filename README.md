@@ -38,7 +38,7 @@ graph LR
 
 ---
 
-## Die 5 Workflows
+## Die 6 Workflows
 
 ### WF1: AI News-Kurator
 
@@ -132,6 +132,24 @@ graph TB
 - **Nodes:** 16 | **Trigger:** Webhook | **Test:** Automatisiert (4 Szenarien)
 - **Konzepte:** Dispatcher-Pattern, 4 Gemini LLMs, Multi-Agent-Orchestrierung, Qualitaets-Scoring, Conditional Alerts
 
+### WF6: AI Personal Assistant (n8nClaw)
+
+```mermaid
+graph TB
+    A["Chat Trigger"] --> B["Get Init Profile"]
+    B --> C["Edit Fields"]
+    C --> D["Claw Agent<br/>Gemini 2.0 Flash"]
+    D -.->|ai_tool| E["Get/Upsert Tasks"]
+    D -.->|ai_tool| F["Get/Upsert Subtasks"]
+    D -.->|ai_tool| G["Update User Info"]
+    D -.->|ai_tool| H["Think + DatumZeit"]
+    D -.->|ai_memory| I["Chat Memory (15 msgs)"]
+```
+
+- **Nodes:** 13 | **Trigger:** Chat (Telegram geplant) | **Test:** Chat UI
+- **Konzepte:** Persoenlicher Assistent, Onboarding-Flow (username/soul/user), Task-Management via DataTables, basiert auf [n8nClaw](https://github.com/shabbirun/n8nclaw) (MIT)
+- **Phasen:** Phase 1 (Chat+Tasks) aktiv, Phase 2-6 geplant (Telegram, Media, Heartbeat, RAG, Sub-Agents)
+
 ---
 
 ## Automatisierte Test-Pipeline
@@ -165,20 +183,26 @@ pro Node: OK/FAIL, Error-Messages und Output-Previews.
 ```
 n8n-autopilot/
 ├── README.md                          # Diese Datei
-├── TEMPLATE-REFERENZ.md               # Template-Analyse + Empfehlungen
-├── n8n-referenz.md                    # n8n Plattform-Referenz
-├── n8nac-referenz.md                  # n8n-as-code CLI Referenz
-├── LERN-PIPELINE.md                   # Urspruenglicher Lernplan
-├── NEXT-WF-VORSCHLAG.md              # WF5 Entwurf (umgesetzt)
+├── AGENTS.md                          # Auto-generiert (n8nac AI-Kontext)
 ├── n8n-check.sh                       # Execution-Checker Script
 ├── check-secrets.sh                   # Credential-Leak-Schutz
 ├── n8nac-config.json                  # n8nac Konfiguration
-├── AGENTS.md                          # Auto-generiert (AI-Kontext)
+├── n8nClaw.json                       # Original-Template (80 Nodes, MIT)
 ├── .github/
 │   ├── workflows/pages.yml            # GitHub Pages Auto-Deploy
 │   └── ISSUE_TEMPLATE/                # Bug Report + Feature Request
 ├── docs/
-│   └── index.html                     # GitHub Pages Site (Mermaid-Diagramme)
+│   ├── index.html                     # GitHub Pages Site (Mermaid-Diagramme)
+│   ├── referenz/
+│   │   ├── n8n-referenz.md            # n8n Plattform-Referenz
+│   │   ├── n8nac-referenz.md          # n8n-as-code CLI Referenz
+│   │   └── template-referenz.md       # Template-Analyse + Empfehlungen
+│   ├── n8nclaw/
+│   │   ├── n8nClaw-referenz.md        # WF6 Architektur + Implementierungsplan
+│   │   └── n8nClaw-original-prompts.md # Verbatim Prompts aus Template
+│   └── planung/
+│       ├── lern-pipeline.md           # Urspruenglicher Lernplan (WF1-WF4)
+│       └── next-wf-vorschlag.md       # WF5-Entwurf (umgesetzt)
 └── workflows/
     └── local_5678_marius _j/
         └── personal/
@@ -186,7 +210,8 @@ n8n-autopilot/
             ├── 02-ai-text-assistent.workflow.ts
             ├── 03-ai-personal-agent.workflow.ts
             ├── 04-ai-dokument-pipeline.workflow.ts
-            └── 05-ai-multi-agent-support.workflow.ts
+            ├── 05-ai-multi-agent-support.workflow.ts
+            └── 06-ai-personal-assistant.workflow.ts   # WF6 (n8nClaw Phase 1)
 ```
 
 ---
@@ -197,8 +222,8 @@ n8n-autopilot/
 - n8n lokal installiert (npm, localhost:5678)
 - n8n-as-code CLI + VS Code Extension konfiguriert
 - Credentials angelegt: Google Gemini (Free Tier), Telegram Bot
-- Referenzdokumente erstellt (n8n-referenz.md, n8nac-referenz.md)
-- Lernplan mit 4 Workflows entworfen (LERN-PIPELINE.md)
+- Referenzdokumente erstellt (docs/referenz/)
+- Lernplan mit 4 Workflows entworfen (docs/planung/lern-pipeline.md)
 
 ### Phase 2: Einfache Workflows (WF1-WF2)
 - **WF1:** Schedule-basierter News-Kurator mit RSS + AI-Bewertung
@@ -446,15 +471,25 @@ AI-gestuetzte Lerninhalte und Wissensmanagement.
 
 ## Referenz-Dokumente
 
+### Nachschlagewerke (`docs/referenz/`)
 | Datei | Inhalt |
 |-------|--------|
-| [n8n-referenz.md](n8n-referenz.md) | n8n Plattform: Architektur, Nodes, Expressions, AI |
-| [n8nac-referenz.md](n8nac-referenz.md) | n8n-as-code CLI: Alle Befehle, Syntax, Gotchas |
-| [LERN-PIPELINE.md](LERN-PIPELINE.md) | Urspruenglicher 4-Workflow-Lernplan |
-| [NEXT-WF-VORSCHLAG.md](NEXT-WF-VORSCHLAG.md) | WF5-Entwurf (umgesetzt) |
-| [TEMPLATE-REFERENZ.md](TEMPLATE-REFERENZ.md) | Template-Analyse: Was uebernommen, was empfohlen |
-| [docs/index.html](docs/index.html) | GitHub Pages: Workflow-Dokumentation mit Mermaid-Diagrammen |
+| [n8n-referenz.md](docs/referenz/n8n-referenz.md) | n8n Plattform: Architektur, Nodes, Expressions, AI |
+| [n8nac-referenz.md](docs/referenz/n8nac-referenz.md) | n8n-as-code CLI: Alle Befehle, Syntax, Gotchas |
+| [template-referenz.md](docs/referenz/template-referenz.md) | Template-Analyse: Was uebernommen, was empfohlen |
+
+### n8nClaw / WF6 (`docs/n8nclaw/`)
+| Datei | Inhalt |
+|-------|--------|
+| [n8nClaw-referenz.md](docs/n8nclaw/n8nClaw-referenz.md) | WF6 Architektur, Implementierungsplan (6 Phasen) |
+| [n8nClaw-original-prompts.md](docs/n8nclaw/n8nClaw-original-prompts.md) | Verbatim Prompts, Tool-Configs, Delta-Tabelle |
+
+### Planung (`docs/planung/`)
+| Datei | Inhalt |
+|-------|--------|
+| [lern-pipeline.md](docs/planung/lern-pipeline.md) | Urspruenglicher 4-Workflow-Lernplan |
+| [next-wf-vorschlag.md](docs/planung/next-wf-vorschlag.md) | WF5-Entwurf (umgesetzt) |
 
 ---
 
-*Stand: 2026-03-12 | Alle Workflows mit Google Gemini Free Tier (0 EUR) | [GitHub Pages](https://mj-deving.github.io/n8n-autopilot/)*
+*Stand: 2026-03-19 | 6 Workflows mit Google Gemini Free Tier (0 EUR)*
