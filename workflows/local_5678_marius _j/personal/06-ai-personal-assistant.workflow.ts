@@ -2,14 +2,27 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 
 // <workflow-map>
 // Workflow : WF6 - AI Personal Assistant
-// Nodes   : 13  |  Connections: 3
+// Nodes   : 26  |  Connections: 19
 //
 // NODE INDEX
 // ──────────────────────────────────────────────────────────────────
 // Property name                    Node type (short)         Flags
 // ChatTrigger                        chatTrigger
+// TelegramTrigger                    telegramTrigger            [creds]
+// Filter                             filter
+// MediaSwitch                        switch
+// GetVoiceFile                       telegram                   [creds]
+// GetImageFile                       telegram                   [creds]
+// GetDocumentFile                    telegram                   [creds]
+// TranscribeVoice                    googleGemini               [creds]
+// AnalyzeImage                       googleGemini               [creds]
+// AnalyzeDocument                    googleGemini               [creds]
 // GetInitProfile                     dataTable
-// EditFields                         set
+// EditFieldsTg                       set
+// GetInitProfileChat                 dataTable
+// EditFieldsChat                     set
+// SendTelegram                       telegram                   [creds]
+// OutputSwitch                       switch
 // ClawAgent                          agent                      [AI]
 // GeminiFlash                        lmChatGoogleGemini         [creds] [ai_languageModel]
 // ChatMemory                         memoryBufferWindow         [ai_memory]
@@ -24,9 +37,26 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // ROUTING MAP
 // ──────────────────────────────────────────────────────────────────
 // ChatTrigger
-//    → GetInitProfile
-//      → EditFields
+//    → GetInitProfileChat
+//      → EditFieldsChat
 //        → ClawAgent
+//          → OutputSwitch
+//            → SendTelegram
+// TelegramTrigger
+//    → Filter
+//      → MediaSwitch
+//        → GetVoiceFile
+//          → TranscribeVoice
+//            → GetInitProfile
+//              → EditFieldsTg
+//                → ClawAgent (↩ loop)
+//       .out(1) → GetImageFile
+//          → AnalyzeImage
+//            → GetInitProfile (↩ loop)
+//       .out(2) → GetDocumentFile
+//          → AnalyzeDocument
+//            → GetInitProfile (↩ loop)
+//       .out(3) → GetInitProfile (↩ loop)
 //
 // AI CONNECTIONS
 // ClawAgent.uses({ ai_languageModel: GeminiFlash, ai_memory: ChatMemory, ai_tool: [DenkTool, Datumzeit, GetTasks, UpsertTask, GetSubtasks, UpsertSubtask, UpdateUserInfo] })
@@ -39,7 +69,7 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 @workflow({
     id: 'aRKiZkBhBDytjO1m',
     name: 'WF6 - AI Personal Assistant',
-    active: true,
+    active: false,
     settings: { executionOrder: 'v1', callerPolicy: 'workflowsFromSameOwner', availableInMCP: false },
 })
 export class Wf6AiPersonalAssistantWorkflow {
@@ -52,12 +82,248 @@ export class Wf6AiPersonalAssistantWorkflow {
         name: 'Chat Trigger',
         type: '@n8n/n8n-nodes-langchain.chatTrigger',
         version: 1.4,
-        position: [0, 400],
+        position: [0, 200],
     })
     ChatTrigger = {
         public: false,
-        initialMessages: `Hallo! Ich bin dein persoenlicher KI-Assistent.
-Wie kann ich dir helfen?`,
+        initialMessages: 'Hallo! Ich bin n8nClaw. Wie kann ich dir helfen?',
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000001',
+        webhookId: 'c6a10002-2222-4000-a000-000000000001',
+        name: 'Telegram Trigger',
+        type: 'n8n-nodes-base.telegramTrigger',
+        version: 1.2,
+        position: [0, 600],
+        credentials: { telegramApi: { id: 'nzmbw9ZNGZdA9sZp', name: 'Telegram Bot' } },
+    })
+    TelegramTrigger = {
+        updates: ['message'],
+        additionalFields: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000002',
+        name: 'Filter',
+        type: 'n8n-nodes-base.filter',
+        version: 2.3,
+        position: [200, 600],
+    })
+    Filter = {
+        conditions: {
+            options: {
+                version: 3,
+                leftValue: '',
+                caseSensitive: true,
+                typeValidation: 'loose',
+            },
+            combinator: 'and',
+            conditions: [
+                {
+                    operator: {
+                        type: 'number',
+                        operation: 'equals',
+                    },
+                    leftValue: '={{ $json.message.chat.id }}',
+                    rightValue: 443039215,
+                },
+            ],
+        },
+        looseTypeValidation: true,
+        options: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000003',
+        name: 'Media Switch',
+        type: 'n8n-nodes-base.switch',
+        version: 3.4,
+        position: [400, 600],
+    })
+    MediaSwitch = {
+        rules: {
+            values: [
+                {
+                    outputKey: 'Voice',
+                    renameOutput: true,
+                    conditions: {
+                        options: {
+                            version: 3,
+                            leftValue: '',
+                            caseSensitive: true,
+                            typeValidation: 'strict',
+                        },
+                        combinator: 'and',
+                        conditions: [
+                            {
+                                operator: {
+                                    type: 'object',
+                                    operation: 'exists',
+                                    singleValue: true,
+                                },
+                                leftValue: '={{ $json.message.voice }}',
+                                rightValue: '',
+                            },
+                        ],
+                    },
+                },
+                {
+                    outputKey: 'Image',
+                    renameOutput: true,
+                    conditions: {
+                        options: {
+                            version: 3,
+                            leftValue: '',
+                            caseSensitive: true,
+                            typeValidation: 'strict',
+                        },
+                        combinator: 'and',
+                        conditions: [
+                            {
+                                operator: {
+                                    type: 'array',
+                                    operation: 'exists',
+                                    singleValue: true,
+                                },
+                                leftValue: '={{ $json.message.photo }}',
+                                rightValue: '',
+                            },
+                        ],
+                    },
+                },
+                {
+                    outputKey: 'Document',
+                    renameOutput: true,
+                    conditions: {
+                        options: {
+                            version: 3,
+                            leftValue: '',
+                            caseSensitive: true,
+                            typeValidation: 'strict',
+                        },
+                        combinator: 'and',
+                        conditions: [
+                            {
+                                operator: {
+                                    type: 'object',
+                                    operation: 'exists',
+                                    singleValue: true,
+                                },
+                                leftValue: '={{ $json.message.document }}',
+                                rightValue: '',
+                            },
+                        ],
+                    },
+                },
+            ],
+        },
+        options: {
+            fallbackOutput: 'extra',
+        },
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000004',
+        webhookId: 'c6a10002-3333-4000-a000-000000000001',
+        name: 'Get Voice File',
+        type: 'n8n-nodes-base.telegram',
+        version: 1.2,
+        position: [600, 400],
+        credentials: { telegramApi: { id: 'nzmbw9ZNGZdA9sZp', name: 'Telegram Bot' } },
+    })
+    GetVoiceFile = {
+        resource: 'file',
+        fileId: '={{ $json.message.voice.file_id }}',
+        additionalFields: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000005',
+        webhookId: 'c6a10002-3333-4000-a000-000000000002',
+        name: 'Get Image File',
+        type: 'n8n-nodes-base.telegram',
+        version: 1.2,
+        position: [600, 600],
+        credentials: { telegramApi: { id: 'nzmbw9ZNGZdA9sZp', name: 'Telegram Bot' } },
+    })
+    GetImageFile = {
+        resource: 'file',
+        fileId: '={{ $json.message.photo[3].file_id }}',
+        additionalFields: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000006',
+        webhookId: 'c6a10002-3333-4000-a000-000000000003',
+        name: 'Get Document File',
+        type: 'n8n-nodes-base.telegram',
+        version: 1.2,
+        position: [600, 800],
+        credentials: { telegramApi: { id: 'nzmbw9ZNGZdA9sZp', name: 'Telegram Bot' } },
+    })
+    GetDocumentFile = {
+        resource: 'file',
+        fileId: '={{ $json.message.document.file_id }}',
+        additionalFields: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000007',
+        name: 'Transcribe Voice',
+        type: '@n8n/n8n-nodes-langchain.googleGemini',
+        version: 1,
+        position: [800, 400],
+        credentials: { googlePalmApi: { id: 'FVE8T8mYCgIRpSyv', name: 'Google Gemini' } },
+    })
+    TranscribeVoice = {
+        resource: 'audio',
+        modelId: {
+            __rl: true,
+            mode: 'list',
+            value: 'models/gemini-2.0-flash',
+        },
+        inputType: 'binary',
+        options: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000008',
+        name: 'Analyze Image',
+        type: '@n8n/n8n-nodes-langchain.googleGemini',
+        version: 1,
+        position: [800, 600],
+        credentials: { googlePalmApi: { id: 'FVE8T8mYCgIRpSyv', name: 'Google Gemini' } },
+    })
+    AnalyzeImage = {
+        resource: 'image',
+        operation: 'analyze',
+        modelId: {
+            __rl: true,
+            mode: 'list',
+            value: 'models/gemini-2.0-flash',
+        },
+        inputType: 'binary',
+        options: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000009',
+        name: 'Analyze Document',
+        type: '@n8n/n8n-nodes-langchain.googleGemini',
+        version: 1,
+        position: [800, 800],
+        credentials: { googlePalmApi: { id: 'FVE8T8mYCgIRpSyv', name: 'Google Gemini' } },
+    })
+    AnalyzeDocument = {
+        resource: 'document',
+        modelId: {
+            __rl: true,
+            mode: 'list',
+            value: 'models/gemini-2.0-flash',
+        },
+        inputType: 'binary',
+        options: {},
     };
 
     @node({
@@ -65,7 +331,7 @@ Wie kann ich dir helfen?`,
         name: 'Get Init Profile',
         type: 'n8n-nodes-base.dataTable',
         version: 1,
-        position: [400, 400],
+        position: [1050, 600],
     })
     GetInitProfile = {
         operation: 'get',
@@ -75,35 +341,27 @@ Wie kann ich dir helfen?`,
             mode: 'list',
             value: 'MVbflMz24gxysx6W',
         },
-        filters: {
-            conditions: [
-                {
-                    keyName: 'username',
-                    keyValue: 'marius',
-                },
-            ],
-        },
     };
 
     @node({
         id: 'c6a10001-1111-4000-a000-000000000004',
-        name: 'Edit Fields',
+        name: 'Edit Fields TG',
         type: 'n8n-nodes-base.set',
         version: 3.4,
-        position: [650, 400],
+        position: [1250, 600],
     })
-    EditFields = {
+    EditFieldsTg = {
         options: {},
         assignments: {
             assignments: [
                 {
-                    id: 'wf6-assign-user-message',
+                    id: 'wf6-tg-user-message',
                     name: 'user_message',
                     type: 'string',
-                    value: "={{ $('Chat Trigger').item.json.chatInput || '' }}",
+                    value: "={{ $if($('Transcribe Voice').isExecuted, $('Transcribe Voice').item.json.content.parts[0].text, $if($('Analyze Document').isExecuted, $('Analyze Document').item.json.content.parts[0].text, $if($('Analyze Image').isExecuted, $('Analyze Image').item.json.content.parts[0].text, $('Filter').item.json.message.text))) }}",
                 },
                 {
-                    id: 'wf6-assign-system-prompt',
+                    id: 'wf6-tg-system-prompt',
                     name: 'system_prompt_details',
                     type: 'string',
                     value: `=username: {{ $json.username || "[COLLECT and use database tool to upsert] Field: username | Prompt: Ask the user to choose a username. This will be their unique identifier. | Rules: Save exactly as provided, no modifications. | Example: 'shabbir', 'nova_builder'" }}
@@ -111,12 +369,120 @@ soul: {{ $json.soul || "[COLLECT and use database tool to upsert] Field: soul | 
 user: {{ $json.user || "[COLLECT and use database tool to upsert] Field: user | Prompt: Ask the user to tell you about themselves - anything they want you to remember. | Rules: Consolidate their response into a structured profile. Include interests, goals, preferences, and any relevant context. | Example: 'AI automation consultant, prefers direct communication, focused on scaling content workflows'" }}`,
                 },
                 {
-                    id: 'wf6-assign-last-channel',
+                    id: 'wf6-tg-last-channel',
+                    name: 'last_channel',
+                    type: 'string',
+                    value: '=telegram',
+                },
+            ],
+        },
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000010',
+        name: 'Get Init Profile Chat',
+        type: 'n8n-nodes-base.dataTable',
+        version: 1,
+        position: [250, 200],
+    })
+    GetInitProfileChat = {
+        operation: 'get',
+        returnAll: true,
+        dataTableId: {
+            __rl: true,
+            mode: 'list',
+            value: 'MVbflMz24gxysx6W',
+        },
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000011',
+        name: 'Edit Fields Chat',
+        type: 'n8n-nodes-base.set',
+        version: 3.4,
+        position: [500, 200],
+    })
+    EditFieldsChat = {
+        options: {},
+        assignments: {
+            assignments: [
+                {
+                    id: 'wf6-chat-user-message',
+                    name: 'user_message',
+                    type: 'string',
+                    value: "={{ $('Chat Trigger').item.json.chatInput || '' }}",
+                },
+                {
+                    id: 'wf6-chat-system-prompt',
+                    name: 'system_prompt_details',
+                    type: 'string',
+                    value: `=username: {{ $json.username || "[COLLECT and use database tool to upsert] Field: username | Prompt: Ask the user to choose a username. This will be their unique identifier. | Rules: Save exactly as provided, no modifications. | Example: 'shabbir', 'nova_builder'" }}
+soul: {{ $json.soul || "[COLLECT and use database tool to upsert] Field: soul | Prompt: Ask the user to define your soul - give you a name, a vibe, and a general purpose. | Rules: Combine all three elements (name, vibe, purpose) into a single concise description. | Example: 'Nova - warm and curious - helps brainstorm creative projects'" }}
+user: {{ $json.user || "[COLLECT and use database tool to upsert] Field: user | Prompt: Ask the user to tell you about themselves - anything they want you to remember. | Rules: Consolidate their response into a structured profile. Include interests, goals, preferences, and any relevant context. | Example: 'AI automation consultant, prefers direct communication, focused on scaling content workflows'" }}`,
+                },
+                {
+                    id: 'wf6-chat-last-channel',
                     name: 'last_channel',
                     type: 'string',
                     value: '=chat',
                 },
             ],
+        },
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000012',
+        webhookId: 'c6a10002-4444-4000-a000-000000000001',
+        name: 'Send Telegram',
+        type: 'n8n-nodes-base.telegram',
+        version: 1.2,
+        position: [1800, 600],
+        credentials: { telegramApi: { id: 'nzmbw9ZNGZdA9sZp', name: 'Telegram Bot' } },
+    })
+    SendTelegram = {
+        chatId: '={{ $("Filter").item.json.message.chat.id }}',
+        text: '={{ ($json.output || "").split("*").join("").split("`").join("").split("_").join("") }}',
+        additionalFields: {},
+    };
+
+    @node({
+        id: 'c6a10002-1111-4000-a000-000000000013',
+        name: 'Output Switch',
+        type: 'n8n-nodes-base.switch',
+        version: 3.4,
+        position: [1600, 400],
+    })
+    OutputSwitch = {
+        rules: {
+            values: [
+                {
+                    outputKey: 'Telegram',
+                    renameOutput: true,
+                    conditions: {
+                        options: {
+                            version: 3,
+                            leftValue: '',
+                            caseSensitive: true,
+                            typeValidation: 'strict',
+                        },
+                        combinator: 'and',
+                        conditions: [
+                            {
+                                operator: {
+                                    type: 'string',
+                                    operation: 'equals',
+                                },
+                                leftValue:
+                                    "={{ $if($('Edit Fields TG').isExecuted, $('Edit Fields TG').item.json.last_channel, $('Edit Fields Chat').item.json.last_channel) }}",
+                                rightValue: 'telegram',
+                            },
+                        ],
+                    },
+                },
+            ],
+        },
+        options: {
+            fallbackOutput: 'extra',
         },
     };
 
@@ -533,9 +899,25 @@ IMPORTANT: The user prefers German responses. Antworte auf Deutsch, kurz und pra
 
     @links()
     defineRouting() {
-        this.ChatTrigger.out(0).to(this.GetInitProfile.in(0));
-        this.GetInitProfile.out(0).to(this.EditFields.in(0));
-        this.EditFields.out(0).to(this.ClawAgent.in(0));
+        this.ChatTrigger.out(0).to(this.GetInitProfileChat.in(0));
+        this.GetInitProfileChat.out(0).to(this.EditFieldsChat.in(0));
+        this.EditFieldsChat.out(0).to(this.ClawAgent.in(0));
+        this.TelegramTrigger.out(0).to(this.Filter.in(0));
+        this.Filter.out(0).to(this.MediaSwitch.in(0));
+        this.MediaSwitch.out(0).to(this.GetVoiceFile.in(0));
+        this.MediaSwitch.out(1).to(this.GetImageFile.in(0));
+        this.MediaSwitch.out(2).to(this.GetDocumentFile.in(0));
+        this.MediaSwitch.out(3).to(this.GetInitProfile.in(0));
+        this.GetVoiceFile.out(0).to(this.TranscribeVoice.in(0));
+        this.GetImageFile.out(0).to(this.AnalyzeImage.in(0));
+        this.GetDocumentFile.out(0).to(this.AnalyzeDocument.in(0));
+        this.TranscribeVoice.out(0).to(this.GetInitProfile.in(0));
+        this.AnalyzeImage.out(0).to(this.GetInitProfile.in(0));
+        this.AnalyzeDocument.out(0).to(this.GetInitProfile.in(0));
+        this.GetInitProfile.out(0).to(this.EditFieldsTg.in(0));
+        this.EditFieldsTg.out(0).to(this.ClawAgent.in(0));
+        this.ClawAgent.out(0).to(this.OutputSwitch.in(0));
+        this.OutputSwitch.out(0).to(this.SendTelegram.in(0));
 
         this.ClawAgent.uses({
             ai_languageModel: this.GeminiFlash.output,

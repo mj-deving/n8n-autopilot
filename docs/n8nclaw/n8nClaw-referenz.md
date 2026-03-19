@@ -200,48 +200,70 @@ Der Switch prueft `last_channel` aus dem Edit Fields Node.
 
 ## 11. WF6 Implementierungsplan — Schrittweiser Aufbau
 
-### Phase 1: Kern (MVP)
-**Ziel**: Telegram → AI Agent → Telegram (wie WF3, aber mit Profil + Tasks)
+### Phase 1: Kern (MVP) ✅ ERLEDIGT
+**Ziel**: Chat Trigger → AI Agent mit Profil + Tasks
 
-Nodes:
-- Telegram Trigger (haben wir: nzmbw9ZNGZdA9sZp)
-- Filter (Chat-ID: 443039215)
-- n8n Data Tables: Init, Tasks, Subtasks anlegen
-- Edit Fields (normalize)
-- AI Agent mit Gemini 2.0 Flash (statt OpenRouter/Claude)
-- DataTable Tools: Get/Upsert Tasks, Get/Upsert Subtasks, Update User
-- Send Telegram Message
+Umgesetzt:
+- Chat Trigger (n8n UI) als Einstieg
+- n8n Data Tables: Init, Tasks, Subtasks (via API angelegt)
+- Edit Fields (normalize: user_message, system_prompt_details, last_channel)
+- AI Agent (Gemini 2.0 Flash) mit Original n8nClaw System-Prompt
+- DataTable Tools: Get/Upsert Tasks, Get/Upsert Subtasks, Update User Info
+- Think Tool + DatumZeit Tool
+- Buffer Memory (15 Nachrichten)
+- Onboarding-Flow (username → soul → user Abfrage)
 
-Aenderungen vs. Original:
-- **LLM**: Gemini 2.0 Flash statt Claude Sonnet via OpenRouter
-- **Memory**: Simple Buffer Memory statt Postgres Chat Memory
-- **Kein** WhatsApp, Gmail, Heartbeat
-- **Kein** Vector Store / RAG
-- **Keine** Sub-Agents (Worker, Research, Email, Document)
+Abweichungen vs. Original:
+- Chat Trigger statt Telegram (HTTPS-Tunnel fehlte)
+- Gemini 2.0 Flash statt Claude Sonnet via OpenRouter
+- Buffer Memory statt Postgres Chat Memory
+- Keine Sub-Agents, kein Vector Store, kein Media Handling
 
-### Phase 2: Media Handling
-- Switch1 (Voice/Image/Document/Text)
-- Gemini fuer Transkription, Bild- und Dokumentanalyse
-- Braucht: Google AI (Gemini) Credential (haben wir: FVE8T8mYCgIRpSyv)
+### Phase 2: Telegram + Media Handling ← AKTUELL
+**Ziel**: Telegram als Eingangskanal + Voice/Image/Document-Verarbeitung
+
+Schritt 2a — Telegram Trigger:
+- n8n mit N8N_TUNNEL_ENABLED=true starten (HTTPS fuer Telegram Webhook)
+- Telegram Trigger Node hinzufuegen (Credential: nzmbw9ZNGZdA9sZp)
+- Filter Node (Chat-ID: 443039215)
+- Chat Trigger bleibt als alternativer Eingang bestehen
+- Beide Trigger → GetInitProfile → EditFields → Agent
+
+Schritt 2b — Media Handling:
+- Switch1 nach Filter: Voice / Image / Document / Text
+- 3x "Get a file" (Telegram Download: voice.file_id, photo[3].file_id, document.file_id)
+- Gemini Transkription (Voice → gemini-2.5-flash, resource: audio)
+- Gemini Bildanalyse (Image → gemini-2.5-flash, resource: image, operation: analyze)
+- Gemini Dokumentanalyse (Document → gemini-2.5-flash, resource: document)
+- Edit Fields: user_message mit $if-Kette aus allen Analyse-Ergebnissen
+- Text-Nachrichten → direkt zu Edit Fields (kein Media Processing)
+
+Voraussetzungen:
+- Google AI (Gemini) Credential (haben wir: FVE8T8mYCgIRpSyv)
+- Telegram Bot Credential (haben wir: nzmbw9ZNGZdA9sZp)
+- HTTPS-Tunnel fuer Telegram Webhook
 
 ### Phase 3: Heartbeat + Autonomie
 - Schedule Trigger (stuendlich)
 - Agent prueft offene Tasks und arbeitet selbststaendig
 - Edit Fields2 mit "See what's pending and start working on it"
+- Output-Routing: Switch nach last_channel (telegram/chat)
 
 ### Phase 4: Long-Term Memory
 - Supabase einrichten (Free Tier)
-- Chat-History summarisieren + embedden
+- Chat-History summarisieren + embedden (Gemini statt OpenAI Embeddings?)
 - Vector Store als RAG-Tool am Agent
-- Braucht: Supabase Account + Embedding-Loesung (Gemini statt OpenAI?)
+- Memory Pipeline: Schedule → SQL → Aggregate → Summarize → Embed → Store
 
 ### Phase 5: Sub-Agents
 - Research Agent (Gemini + Tavily Free Tier)
-- Weitere Agents je nach Bedarf
+- Worker Agents (Gemini, dynamischer System-Prompt via $fromAI)
+- Weitere Agents (Email, Document) je nach Bedarf und verfuegbaren Credentials
 
 ### Phase 6: Weitere Kanaele
-- Gmail Trigger
-- WhatsApp via Evolution API (VPS)
+- Gmail Trigger + Email Manager Agent
+- WhatsApp via Evolution API (VPS: 213.199.32.18)
+- Output-Switch erweitern (telegram/whatsapp/email)
 
 ---
 
