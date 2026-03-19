@@ -1,7 +1,7 @@
 # n8n-autopilot: AI-Workflow-Automatisierung mit n8n-as-code
 
-> 5 AI-Workflows, vollstaendig als TypeScript, automatisiert gebaut und getestet
-> Marius J | Stand: 2026-03-12
+> 6 AI-Workflows, vollstaendig als TypeScript, automatisiert gebaut und getestet
+> Marius J | Stand: 2026-03-19
 
 ---
 
@@ -136,19 +136,28 @@ graph TB
 
 ```mermaid
 graph TB
-    A["Chat Trigger"] --> B["Get Init Profile"]
-    B --> C["Edit Fields"]
-    C --> D["Claw Agent<br/>Gemini 2.0 Flash"]
-    D -.->|ai_tool| E["Get/Upsert Tasks"]
-    D -.->|ai_tool| F["Get/Upsert Subtasks"]
-    D -.->|ai_tool| G["Update User Info"]
-    D -.->|ai_tool| H["Think + DatumZeit"]
-    D -.->|ai_memory| I["Chat Memory (15 msgs)"]
+    T1["Chat Trigger"] --> P1["Get Init Profile"] --> E1["Edit Fields Chat"]
+    T2["Telegram Trigger"] --> F["Filter Chat-ID"]
+    F --> SW{"Media Switch"}
+    SW -->|Voice| GV["Get File"] --> TV["Gemini Transcribe"]
+    SW -->|Image| GI["Get File"] --> AI["Gemini Analyze"]
+    SW -->|Document| GD["Get File"] --> AD["Gemini Analyze"]
+    SW -->|Text| P2["Get Init Profile"]
+    TV --> P2
+    AI --> P2
+    AD --> P2
+    P2 --> E2["Edit Fields TG"]
+    E1 --> D["Claw Agent<br/>Gemini 2.0 Flash"]
+    E2 --> D
+    D --> OS{"Output Switch"}
+    OS -->|telegram| ST["Send Telegram"]
+    D -.->|ai_tool| Tools["Tasks / Subtasks / User Info / Think / DatumZeit"]
+    D -.->|ai_memory| M["Chat Memory (15 msgs)"]
 ```
 
-- **Nodes:** 13 | **Trigger:** Chat (Telegram geplant) | **Test:** Chat UI
-- **Konzepte:** Persoenlicher Assistent, Onboarding-Flow (username/soul/user), Task-Management via DataTables, basiert auf [n8nClaw](https://github.com/shabbirun/n8nclaw) (MIT)
-- **Phasen:** Phase 1 (Chat+Tasks) aktiv, Phase 2-6 geplant (Telegram, Media, Heartbeat, RAG, Sub-Agents)
+- **Nodes:** 26 | **Trigger:** Telegram + Chat | **Test:** Telegram Bot + n8n Chat UI
+- **Konzepte:** Persoenlicher Assistent, Onboarding-Flow (username/soul/user), Task-Management via DataTables, Media-Analyse (Voice/Image/Document), basiert auf [n8nClaw](https://github.com/shabbirun/n8nclaw) (MIT)
+- **Phasen:** Phase 1 (Chat+Tasks) ✅ | Phase 2 (Telegram+Media) ✅ | Phase 3-6 geplant (Heartbeat, RAG, Sub-Agents, Multi-Channel)
 
 ---
 
@@ -183,11 +192,11 @@ pro Node: OK/FAIL, Error-Messages und Output-Previews.
 ```
 n8n-autopilot/
 ├── README.md                          # Diese Datei
+├── CLAUDE.md                          # Claude Code Projekt-Kontext
 ├── AGENTS.md                          # Auto-generiert (n8nac AI-Kontext)
 ├── n8n-check.sh                       # Execution-Checker Script
 ├── check-secrets.sh                   # Credential-Leak-Schutz
 ├── n8nac-config.json                  # n8nac Konfiguration
-├── n8nClaw.json                       # Original-Template (80 Nodes, MIT)
 ├── .github/
 │   ├── workflows/pages.yml            # GitHub Pages Auto-Deploy
 │   └── ISSUE_TEMPLATE/                # Bug Report + Feature Request
@@ -199,7 +208,8 @@ n8n-autopilot/
 │   │   └── template-referenz.md       # Template-Analyse + Empfehlungen
 │   ├── n8nclaw/
 │   │   ├── n8nClaw-referenz.md        # WF6 Architektur + Implementierungsplan
-│   │   └── n8nClaw-original-prompts.md # Verbatim Prompts aus Template
+│   │   ├── n8nClaw-original-prompts.md # Verbatim Prompts aus Template
+│   │   └── n8nClaw.json               # Original-Template (80 Nodes, MIT)
 │   └── planung/
 │       ├── lern-pipeline.md           # Urspruenglicher Lernplan (WF1-WF4)
 │       └── next-wf-vorschlag.md       # WF5-Entwurf (umgesetzt)
@@ -211,7 +221,7 @@ n8n-autopilot/
             ├── 03-ai-personal-agent.workflow.ts
             ├── 04-ai-dokument-pipeline.workflow.ts
             ├── 05-ai-multi-agent-support.workflow.ts
-            └── 06-ai-personal-assistant.workflow.ts   # WF6 (n8nClaw Phase 1)
+            └── 06-ai-personal-assistant.workflow.ts   # WF6 (n8nClaw Phase 1+2)
 ```
 
 ---
@@ -455,17 +465,21 @@ AI-gestuetzte Lerninhalte und Wissensmanagement.
 ## Naechste Schritte
 
 **Infrastruktur (erledigt):**
-- ~~GitHub Pages~~ — Live unter [mj-deving.github.io/n8n-autopilot](https://mj-deving.github.io/n8n-autopilot/)
-- ~~Mermaid-Diagramme~~ — Alle Workflow-Flows als Mermaid im README + Pages
+- ~~Mermaid-Diagramme~~ — Alle Workflow-Flows als Mermaid im README
 - ~~Secret-Check~~ — Pre-Commit Hook blockiert Credentials automatisch
 - ~~Issue Templates~~ — Bug Reports + Feature Requests mit WF-Dropdown
+- ~~Multi-Channel Telegram~~ — Telegram Bot als Eingangskanal via Cloudflare Tunnel
+- ~~Docs-Reorganisation~~ — Referenz/n8nClaw/Planung in `docs/` Unterordner
 
-**Naechste Workflows:**
+**WF6 n8nClaw — Naechste Phasen:**
+1. **Phase 3: Heartbeat** — Schedule Trigger, autonomes Task-Processing
+2. **Phase 4: Long-Term Memory** — Supabase Vector Store, RAG, Chat-Summarisierung
+3. **Phase 5: Sub-Agents** — Research Agent, Worker Agents (Gemini)
+4. **Phase 6: Multi-Channel** — Gmail Trigger, WhatsApp via Evolution API (VPS)
+
+**Allgemeine Naechste Schritte:**
 1. **Ollama auf VPS** — Lokales LLM als Fallback bei Gemini Rate-Limits
-2. **Google Sheets Integration** — Logging und Reporting fuer alle Workflows
-3. **Error Workflows** — Zentrale Fehlerbehandlung mit Retry-Logik
-4. **RAG / Vector Store** — Wissensbasis fuer FAQ- und Support-Agenten
-5. **Multi-Channel** — Telegram-Eingang zusaetzlich zu Webhook
+2. **Error Workflows** — Zentrale Fehlerbehandlung mit Retry-Logik
 
 ---
 
