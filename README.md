@@ -1,4 +1,18 @@
-# n8n-autopilot: AI-Workflow-Automatisierung mit n8n-as-code
+# n8n-autopilot
+
+![n8n](https://img.shields.io/badge/n8n-2.x-orange.svg)
+![Code-First](https://img.shields.io/badge/code--first-n8nac-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+**The origin project.** 6 AI workflows built entirely code-first with n8n + n8nac — no UI clicks. From RSS news curation to a multi-agent support system, each workflow is TypeScript, deployed via CLI, and tested automatically. Built on Google Gemini Free Tier (total cost: €0).
+
+This project proved that full-cycle AI workflow development (write → deploy → test → debug → iterate) can be 100% automated for webhook-based workflows. The patterns and tooling discovered here became [code-first-n8n](https://github.com/mj-deving/code-first-n8n) and the [n8n-project-template](https://github.com/mj-deving/n8n-project-template).
+
+> **Note:** The detailed documentation below is in German (the project's original language).
+
+---
+
+## n8n-autopilot: AI-Workflow-Automatisierung mit n8n-as-code
 
 > 6 AI-Workflows, vollstaendig als TypeScript, automatisiert gebaut und getestet
 > Marius J | Stand: 2026-03-19
