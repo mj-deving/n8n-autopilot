@@ -1,8 +1,6 @@
 # n8n-autopilot
 
-![n8n](https://img.shields.io/badge/n8n-2.x-orange.svg)
-![Code-First](https://img.shields.io/badge/code--first-n8nac-blue.svg)
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![n8n](https://img.shields.io/badge/-n8n-EA4B71?style=flat-square) ![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?style=flat-square) ![Gemini](https://img.shields.io/badge/-Gemini-4285F4?style=flat-square)
 
 **The origin project.** 6 AI workflows built entirely code-first with n8n + n8nac — no UI clicks. From RSS news curation to a multi-agent support system, each workflow is TypeScript, deployed via CLI, and tested automatically. Built on Google Gemini Free Tier (total cost: €0).
 
